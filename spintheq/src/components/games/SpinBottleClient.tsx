@@ -1,13 +1,8 @@
+// src/components/games/SpinBottleClient.tsx
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useState } from 'react';
-
-// Dynamically import the SpinBottle component with ssr disabled
-const DynamicSpinBottle = dynamic(() => import('./SpinBottle'), {
-  ssr: false,
-  loading: () => <div className="text-center p-4">Loading spinner...</div>
-});
+import { useState, useEffect } from 'react';
+import SpinBottle from './SpinBottle';
 
 interface SpinBottleClientProps {
   players: string[];
@@ -15,5 +10,15 @@ interface SpinBottleClientProps {
 }
 
 export default function SpinBottleClient({ players, onPlayerSelected }: SpinBottleClientProps) {
-  return <DynamicSpinBottle players={players} onPlayerSelected={onPlayerSelected} />;
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  if (!isClient) {
+    return <div className="text-center p-4">Loading spinner...</div>;
+  }
+  
+  return <SpinBottle players={players} onPlayerSelected={onPlayerSelected} />;
 }

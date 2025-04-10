@@ -1,3 +1,4 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
@@ -31,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen`}>
+      <body 
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen`}
+        suppressHydrationWarning={true}
+      >
         {children}
       </body>
     </html>

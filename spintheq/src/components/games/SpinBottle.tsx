@@ -1,3 +1,4 @@
+// src/components/games/SpinBottle.tsx
 import { useState, useRef, useEffect } from 'react';
 import Button from '../ui/Button';
 
@@ -37,13 +38,14 @@ export default function SpinBottle({ players, onPlayerSelected }: SpinBottleProp
     setRotation(prevRotation => prevRotation + spinAmount);
     
     // Determine which player is selected after the spin
-    const normalizedDegrees = spinAmount % 360;
+    const finalAngle = rotation + spinAmount;
+    const normalizedDegrees = finalAngle % 360;
     const degreesPerPlayer = 360 / players.length;
     
     // Calculate which player the bottle points to
-    // The bottle points to the right (0 degrees), so we offset by 90 degrees
-    const playerIndex = Math.floor(((normalizedDegrees + 90) % 360) / degreesPerPlayer);
-    const selectedIndex = players.length - 1 - playerIndex;
+    // The bottle points right (0 degrees), so we ensure proper alignment
+    const playerIndex = Math.floor(normalizedDegrees / degreesPerPlayer);
+    const selectedIndex = playerIndex % players.length;
     
     // Wait for the animation to complete before calling the callback
     spinTimeoutRef.current = setTimeout(() => {
@@ -84,7 +86,7 @@ export default function SpinBottle({ players, onPlayerSelected }: SpinBottleProp
         
         {/* Bottle */}
         <div 
-          className="absolute top-1/2 left-1/2 w-2 h-32 bg-amber-800 origin-top transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-3000 ease-out"
+          className="absolute top-1/2 left-1/2 w-2 h-32 bg-amber-800 origin-top transform -translate-x-1/2 -translate-y-0 transition-transform duration-3000 ease-out"
           style={{ 
             transform: `translate(-50%, 0) rotate(${rotation}deg)`,
             borderRadius: '0 0 4px 4px'
