@@ -1,151 +1,121 @@
-import { useState, useEffect } from 'react';
-import SpinBottle from './SpinBottle';
-import QuestionDisplay from './QuestionDisplay';
-import PlayerList from './PlayerList';
-import Button from '../ui/Button';
-import AdBanner from '../ui/AdBanner';
-import { CategoryKey } from '../../lib/content/spin-the-bottle';
+import { useState, useRef } from 'react';
 
-export default function SpinTheBottleGame() {
-  const [players, setPlayers] = useState<string[]>([]);
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(['Casual']);
-  
-  const availableCategories: CategoryKey[] = ['Casual', 'Spicy', 'Couples'];
-  
-  // Add a player to the game
-  const handleAddPlayer = (name: string) => {
-    if (!players.includes(name)) {
-      setPlayers([...players, name]);
-    }
+type SpinBottleProps = {
+  players: string[];
+  onPlayerSelected: (playerName: string) => void;
+};
+
+export default function SpinBottle(props: SpinBottleProps) {
+  const { players, onPlayerSelected } = props;
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
+  const bottleRef = useRef<HTMLDivElement>(null);
+
+  // Calculate positions for players in a circle
+  const getPlayerPositions = () => {
+    if (players.length === 0) return [];
+    
+    const positions = players.map((player, index) => {
+      const angle = (index / players.length) * 2 * Math.PI;
+      const x = Math.cos(angle) * 40 + 50; // 50% is center, 40% is radius
+      const y = Math.sin(angle) * 40 + 50; // 50% is center, 40% is radius
+      return { name: player, x, y, angle: angle * (180 / Math.PI) };
+    });
+    
+    return positions;
   };
-  
-  // Remove a player from the game
-  const handleRemovePlayer = (index: number) => {
-    setPlayers(players.filter((_, i) => i !== index));
+
+  const playerPositions = getPlayerPositions();
+
+  // Spin the bottle
+  const spinBottle = () => {
+    if (isSpinning || players.length < 2) return;
+    
+    setIsSpinning(true);
+    setSelectedPlayerIndex(null);
+    
+    // Random number of rotations (3-6 full rotations + random ending)
+    const minRotations = 3;
+    const maxRotations = 6;
+    const fullRotations = Math.random() * (maxRotations - minRotations) + minRotations;
+    
+    // Random player selection
+    const randomPlayerIndex = Math.floor(Math.random() * players.length);
+    const targetAngle = playerPositions[randomPlayerIndex].angle;
+    
+    // Calculate final rotation
+    // Adjust by 90 degrees so the bottle points upward at 0 degrees
+    const newRotation = fullRotations * 360 + targetAngle + 90;
+    
+    setRotation(newRotation);
+    
+    // After animation completes, update state
+    setTimeout(() => {
+      setIsSpinning(false);
+      setSelectedPlayerIndex(randomPlayerIndex);
+      onPlayerSelected(players[randomPlayerIndex]);
+    }, 3000); // Match this to CSS transition duration
   };
-  
-  // Handle the bottle pointing to a player
-  const handlePlayerSelected = (player: string) => {
-    setSelectedPlayer(player);
-  };
-  
-  // Handle next question (reset the selected player)
-  const handleNextQuestion = () => {
-    setSelectedPlayer(null);
-  };
-  
-  // Toggle category selection
-  const toggleCategory = (category: CategoryKey) => {
-    if (selectedCategories.includes(category)) {
-      // Don't allow removing the last category
-      if (selectedCategories.length > 1) {
-        setSelectedCategories(selectedCategories.filter(c => c !== category));
-      }
-    } else {
-      setSelectedCategories([...selectedCategories, category]);
-    }
-  };
-  
-  // Start the game
-  const startGame = () => {
-    if (players.length >= 2) {
-      setGameStarted(true);
-      setSelectedPlayer(null);
-    }
-  };
-  
-  // Reset the game
-  const resetGame = () => {
-    setGameStarted(false);
-    setSelectedPlayer(null);
-  };
-  
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      {!gameStarted ? (
-        // Game setup screen
-        <div className="space-y-8">
-          {/* Player Input */}
-          <div className="bg-blue-700/50 backdrop-blur-sm rounded-xl p-6">
-            <PlayerList 
-              players={players} 
-              onAddPlayer={handleAddPlayer} 
-              onRemovePlayer={handleRemovePlayer} 
-            />
-          </div>
-          
-          {/* Ad Banner */}
-          <AdBanner position="middle" />
-          
-          {/* Category Selection */}
-          <div className="bg-blue-700/50 backdrop-blur-sm rounded-xl p-6">
-            <h3 className="text-lg font-medium mb-3">Choose Categories</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {availableCategories.map(category => (
-                <button 
-                  key={category}
-                  onClick={() => toggleCategory(category)}
-                  className={`p-2 rounded-lg transition-colors text-center ${
-                    selectedCategories.includes(category)
-                      ? 'bg-blue-500 border-2 border-blue-300'
-                      : 'bg-blue-800 border-2 border-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Start Game Button */}
-          <Button 
-            onClick={startGame} 
-            disabled={players.length < 2}
-            variant="primary"
-            size="lg"
-            fullWidth
-          >
-            Start Game
-          </Button>
-          
-          {players.length < 2 && (
-            <p className="text-yellow-300 text-center text-sm">
-              Add at least 2 players to start the game
-            </p>
-          )}
+    <div className="w-full relative aspect-square max-w-md mx-auto bg-blue-700/50 backdrop-blur-sm rounded-full">
+      {/* Players positioned around the circle */}
+      {playerPositions.map((player, index) => (
+        <div 
+          key={index}
+          className={`absolute transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center
+            ${selectedPlayerIndex === index ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-blue-800' : ''}`}
+          style={{
+            left: `${player.x}%`,
+            top: `${player.y}%`,
+          }}
+        >
+          <span className="text-xs font-medium text-center">{player.name}</span>
         </div>
-      ) : (
-        // Game screen
-        <div className="space-y-8">
-          {/* Game Controls */}
-          <div className="flex justify-between items-center">
-            <Button onClick={resetGame} variant="outline" size="sm">
-              Back to Setup
-            </Button>
-            <div className="px-3 py-1 bg-blue-600 rounded-full text-sm">
-              <span className="font-medium">{players.length}</span> Players
-            </div>
-          </div>
-          
-          {/* Bottle Spinner */}
-          <SpinBottle 
-            players={players} 
-            onPlayerSelected={handlePlayerSelected} 
-          />
-          
-          {/* Question Display */}
-          <QuestionDisplay 
-            selectedPlayer={selectedPlayer}
-            categories={selectedCategories}
-            onNextQuestion={handleNextQuestion}
-          />
-          
-          {/* Ad Banner */}
-          <AdBanner position="bottom" />
+      ))}
+      
+      {/* The bottle */}
+      <div 
+        ref={bottleRef}
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/6 transition-transform duration-3000 ease-out"
+        style={{ transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}
+      >
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="bg-amber-800/70 w-full h-3 rounded-full"></div>
+          <div className="absolute w-4 h-4 bg-amber-700 rounded-full"></div>
+          <div className="absolute right-0 w-0 h-0 
+            border-t-[8px] border-t-transparent
+            border-l-[16px] border-l-amber-800
+            border-b-[8px] border-b-transparent"></div>
+        </div>
+      </div>
+      
+      {/* Spin button - positioned in the center */}
+      <button
+        onClick={spinBottle}
+        disabled={isSpinning || players.length < 2}
+        className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+          w-16 h-16 rounded-full bg-blue-600 text-white font-bold text-sm
+          ${isSpinning ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-500'}
+          ${players.length < 2 ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
+      >
+        {isSpinning ? "Spinning..." : "SPIN"}
+      </button>
+      
+      {/* No players message */}
+      {players.length < 2 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center text-white text-sm bg-blue-800/70 px-3 py-1 rounded-full">
+          Add at least 2 players to start
         </div>
       )}
+      
+      <style jsx>{`
+        .duration-3000 {
+          transition-duration: 3000ms;
+        }
+      `}</style>
     </div>
   );
 }

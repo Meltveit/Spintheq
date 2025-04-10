@@ -51,7 +51,7 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
   return (
     <div className="w-full max-w-md bg-blue-700/50 backdrop-blur-sm rounded-xl p-6">
       <h3 className="text-xl font-bold mb-4 text-center">
-        {selectedPlayer}'s Turn
+        {selectedPlayer}&#39;s Turn
       </h3>
       
       {category && (

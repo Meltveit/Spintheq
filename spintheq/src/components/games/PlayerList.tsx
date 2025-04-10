@@ -1,9 +1,14 @@
 import { useState } from 'react';
 
+interface PlayerWithId {
+  id: number;
+  name: string;
+}
+
 interface PlayerListProps {
-  players: string[];
+  players: PlayerWithId[];
   onAddPlayer: (name: string) => void;
-  onRemovePlayer: (index: number) => void;
+  onRemovePlayer: (id: number) => void;
 }
 
 export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: PlayerListProps) {
@@ -45,16 +50,16 @@ export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: Pla
         <p className="text-blue-300 text-center py-4">Add at least 2 players to start the game</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {players.map((player, index) => (
+          {players.map((player) => (
             <div 
-              key={index} 
+              key={player.id} 
               className="bg-blue-500 py-1 px-3 rounded-full flex items-center"
             >
-              <span className="mr-2">{player}</span>
+              <span className="mr-2">{player.name}</span>
               <button 
-                onClick={() => onRemovePlayer(index)}
+                onClick={() => onRemovePlayer(player.id)}
                 className="text-blue-300 hover:text-white transition-colors"
-                aria-label={`Remove ${player}`}
+                aria-label={`Remove ${player.name}`}
               >
                 ✕
               </button>

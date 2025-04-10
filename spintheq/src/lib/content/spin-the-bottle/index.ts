@@ -1,15 +1,15 @@
-// C:\litt_av_hvert_nett\Spintheq\spintheq\src\lib\content\spin-the-bottle\index.ts
+// src/lib/content/spin-the-bottle/index.ts
 
 import { casualQuestions } from './casual';
 import { spicyQuestions } from './spicy';
 import { couplesQuestions } from './couples';
-import { Question } from './types';
 
-export const categories: Record<string, Question[]> = {
+export const categories = {
   'Casual': casualQuestions,
   'Spicy': spicyQuestions,
   'Couples': couplesQuestions
-};
+} as const;
 
 export type CategoryKey = keyof typeof categories;
-export { Question } from './types';
+// Use 'export type' syntax for re-exporting types when isolatedModules is enabled
+export type { Question } from './types';
