@@ -5,7 +5,6 @@ import { useState } from 'react';
 import Button from '../ui/Button';
 import AdBanner from '../ui/AdBanner';
 import DifficultySelector from './DifficultySelector';
-import TruthOrDareBoard from './TruthOrDareBoard';
 import PlayerScoreboard from './PlayerScoreboard';
 import GameHistoryLog from './GameHistoryLog';
 import { 
@@ -17,7 +16,8 @@ import {
   POINTS_FOR_TRUTH,
   POINTS_FOR_DARE,
   GameActionHistory,
-  POINTS_TO_DISTRIBUTE
+  POINTS_TO_DISTRIBUTE,
+  DIFFICULTY_CONFIG
 } from '@/lib/models/truth-or-dare';
 import { v4 as uuidv4 } from '@/lib/utils/uuid';
 
@@ -159,7 +159,7 @@ export default function TruthOrDareGame() {
   };
   
   // Handle when a player completes a challenge
-  const handleChallengeComplete = (playerId: string) => {
+  const handleChallengeComplete = () => {
     // Ensure we have valid state
     if (!gameState.currentPlayerId || !gameState.targetPlayerId || !gameState.selectedChallengeType) return;
     
@@ -207,11 +207,11 @@ export default function TruthOrDareGame() {
   };
   
   // Handle when a player passes on a challenge
-  const handleChallengePass = (playerId: string) => {
+  const handleChallengePass = () => {
     // Ensure we have valid state
     if (!gameState.currentPlayerId || !gameState.targetPlayerId || !gameState.selectedChallengeType) return;
     
-    const targetPlayer = gameState.players.find(p => p.id === playerId);
+    const targetPlayer = gameState.players.find(p => p.id === gameState.targetPlayerId);
     if (!targetPlayer) return;
     
     if (targetPlayer.passesRemaining > 0) {
@@ -229,7 +229,7 @@ export default function TruthOrDareGame() {
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(p => 
-          p.id === playerId 
+          p.id === targetPlayer.id 
             ? { 
                 ...p, 
                 passesRemaining: p.passesRemaining - 1,
@@ -247,12 +247,8 @@ export default function TruthOrDareGame() {
       }));
     } else {
       // Calculate penalty based on difficulty and how many times they've used penalties
-      const config = gameState.difficultyLevel === 'Light' ? 1 : 
-                      gameState.difficultyLevel === 'Intermediate' ? 2 :
-                      gameState.difficultyLevel === 'Experienced' ? 3 : 5;
-      
-      const penalty = config + (targetPlayer.penaltiesUsed * (gameState.difficultyLevel === 'PartyKing' ? 3 : 
-                                                            gameState.difficultyLevel === 'Experienced' ? 2 : 1));
+      const config = DIFFICULTY_CONFIG[gameState.difficultyLevel];
+      const penalty = config.startingSips + (targetPlayer.penaltiesUsed * config.incrementSips);
       
       const historyItem: GameActionHistory = {
         round: gameState.round,
@@ -268,7 +264,7 @@ export default function TruthOrDareGame() {
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(p => 
-          p.id === playerId 
+          p.id === targetPlayer.id 
             ? { 
                 ...p, 
                 penaltiesUsed: p.penaltiesUsed + 1,
@@ -293,9 +289,7 @@ export default function TruthOrDareGame() {
     if (!player || player.points < POINTS_TO_DISTRIBUTE) return;
     
     setDistributionMode(true);
-    setDistributionAmount(gameState.difficultyLevel === 'Light' ? 1 : 
-                         gameState.difficultyLevel === 'Intermediate' ? 2 :
-                         gameState.difficultyLevel === 'Experienced' ? 3 : 5);
+    setDistributionAmount(DIFFICULTY_CONFIG[gameState.difficultyLevel].distributionMultiplier);
     
     // Set the player as current player if not already
     if (gameState.currentPlayerId !== playerId) {
@@ -361,6 +355,9 @@ export default function TruthOrDareGame() {
   // Get the dealer
   const dealer = gameState.players.find(p => p.id === gameState.dealerId);
   
+  // Get the target player
+  const targetPlayer = gameState.players.find(p => p.id === gameState.targetPlayerId);
+  
   // Determine if we're in the player selection phase
   const isPlayerSelectionPhase = !gameState.targetPlayerId && gameState.currentPlayerId && !gameState.roundInProgress;
   
@@ -379,6 +376,15 @@ export default function TruthOrDareGame() {
     setGameHistory([]);
     setDistributionMode(false);
     setSelectedPlayerForDistribution(null);
+  };
+  
+  // Calculate the next skip penalty for a player
+  const getSkipPenalty = (player: Player | undefined) => {
+    if (!player) return 0;
+    if (player.passesRemaining > 0) return 0;
+    
+    const config = DIFFICULTY_CONFIG[gameState.difficultyLevel];
+    return config.startingSips + (player.penaltiesUsed * config.incrementSips);
   };
   
   return (
@@ -530,7 +536,7 @@ export default function TruthOrDareGame() {
             onStartDistribution={distributionMode ? undefined : handleStartDistribution}
             distributionInProgress={distributionMode}
             onPlayerSelect={isPlayerSelectionPhase ? handleSelectTargetPlayer : undefined}
-            selectionPhase={isPlayerSelectionPhase}
+            selectionPhase={isPlayerSelectionPhase || false}
           />
           
           {/* Game Flow Sections */}
@@ -550,10 +556,10 @@ export default function TruthOrDareGame() {
           )}
           
           {/* 2. Challenge Type Selection Phase */}
-          {gameState.targetPlayerId && !gameState.selectedChallengeType && !distributionMode && (
+          {gameState.targetPlayerId && !gameState.selectedChallengeType && !distributionMode && targetPlayer && (
             <div className="bg-gradient-to-r from-indigo-900/60 to-violet-900/60 rounded-xl p-6 border border-indigo-500/30 shadow-md text-center">
               <h3 className="text-xl font-medium mb-4 text-center text-white">
-                {currentPlayer?.name} is challenging {gameState.players.find(p => p.id === gameState.targetPlayerId)?.name}
+                {currentPlayer?.name} is challenging {targetPlayer.name}
               </h3>
               
               <p className="text-blue-100 mb-4">
@@ -582,22 +588,22 @@ export default function TruthOrDareGame() {
           )}
           
           {/* 3. Challenge Progress Phase */}
-          {gameState.selectedChallengeType && gameState.roundInProgress && !distributionMode && (
+          {gameState.selectedChallengeType && gameState.roundInProgress && !distributionMode && targetPlayer && (
             <div className="bg-gradient-to-r from-indigo-900/60 to-blue-900/60 rounded-xl p-6 border border-indigo-500/30 shadow-md text-center">
               <h3 className="text-xl font-medium mb-2 text-white">
-                {currentPlayer?.name} ➝ {gameState.players.find(p => p.id === gameState.targetPlayerId)?.name}: {gameState.selectedChallengeType}
+                {currentPlayer?.name} ➝ {targetPlayer.name}: {gameState.selectedChallengeType}
               </h3>
               
               <div className="bg-indigo-800/50 rounded-lg p-4 border border-indigo-500/30 mb-4">
                 <p className="text-blue-100">
-                  The Dealer should now ask {gameState.players.find(p => p.id === gameState.targetPlayerId)?.name} a {gameState.selectedChallengeType?.toLowerCase()} question 
+                  The Dealer should now ask {targetPlayer.name} a {gameState.selectedChallengeType?.toLowerCase()} question 
                   or assign a {gameState.selectedChallengeType?.toLowerCase()} challenge.
                 </p>
               </div>
               
               <div className="flex justify-center space-x-4">
                 <Button
-                  onClick={() => handleChallengeComplete(gameState.targetPlayerId!)}
+                  onClick={handleChallengeComplete}
                   variant="primary"
                   size="lg"
                 >
@@ -605,13 +611,13 @@ export default function TruthOrDareGame() {
                 </Button>
                 
                 <Button
-                  onClick={() => handleChallengePass(gameState.targetPlayerId!)}
+                  onClick={handleChallengePass}
                   variant="outline"
                   size="lg"
                 >
-                  {gameState.players.find(p => p.id === gameState.targetPlayerId)?.passesRemaining! > 0 
-                    ? `Pass (${gameState.players.find(p => p.id === gameState.targetPlayerId)?.passesRemaining} left)` 
-                    : `Skip (${gameState.difficultyLevel === 'Light' ? 1 : gameState.difficultyLevel === 'Intermediate' ? 2 : gameState.difficultyLevel === 'Experienced' ? 3 : 5} + ${gameState.players.find(p => p.id === gameState.targetPlayerId)?.penaltiesUsed! * (gameState.difficultyLevel === 'PartyKing' ? 3 : gameState.difficultyLevel === 'Experienced' ? 2 : 1)} sips)`}
+                  {targetPlayer.passesRemaining > 0
+                    ? `Pass (${targetPlayer.passesRemaining} left)` 
+                    : `Skip (${getSkipPenalty(targetPlayer)} sips)`}
                 </Button>
               </div>
             </div>
@@ -685,7 +691,7 @@ export default function TruthOrDareGame() {
               <li>• Complete a Dare: +2 points</li>
               <li>• Reach 5 points to distribute sips</li>
               <li>• Each player starts with 2 free passes</li>
-              <li>• After passes are used, penalties increase by {gameState.difficultyLevel === 'PartyKing' ? 3 : gameState.difficultyLevel === 'Experienced' ? 2 : 1} sip(s) each time</li>
+              <li>• After passes are used, penalties increase by {DIFFICULTY_CONFIG[gameState.difficultyLevel].incrementSips} sip(s) each time</li>
             </ul>
           </div>
           

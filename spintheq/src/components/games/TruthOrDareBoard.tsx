@@ -1,7 +1,7 @@
 // src/components/games/TruthOrDareBoard.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Button from '../ui/Button';
 import { 
   GameState, 
@@ -42,18 +42,6 @@ export default function TruthOrDareBoard({
   
   // Get the dealer
   const dealer = gameState.players.find(p => p.id === gameState.dealerId);
-  
-  // Get the penalty for the current player if they pass
-  const getCurrentPlayerPenalty = (): number => {
-    if (!currentPlayer) return 0;
-    
-    // If they have passes remaining, no penalty
-    if (currentPlayer.passesRemaining > 0) return 0;
-    
-    // Calculate penalty based on difficulty and how many times they've used penalties
-    const config = DIFFICULTY_CONFIG[gameState.difficultyLevel];
-    return config.startingSips + (currentPlayer.penaltiesUsed * config.incrementSips);
-  };
   
   // Check if a player can distribute sips
   const canDistribute = (player: Player): boolean => {
