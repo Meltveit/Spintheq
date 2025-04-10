@@ -1,3 +1,4 @@
+// src/components/games/SpinTheBottleGame.tsx
 'use client';
 
 import { useState } from 'react';
@@ -91,7 +92,7 @@ export default function SpinTheBottleGame() {
                   onClick={() => toggleCategory(category)}
                   className={`p-2 rounded-lg transition-colors text-center ${
                     selectedCategories.includes(category)
-                      ? 'bg-blue-500 border-2 border-blue-300'
+                      ? getCategoryButtonColor(category)
                       : 'bg-blue-800 border-2 border-blue-600 hover:bg-blue-700'
                   }`}
                 >
@@ -150,4 +151,14 @@ export default function SpinTheBottleGame() {
       )}
     </div>
   );
+  
+  // Helper function for category button colors
+  function getCategoryButtonColor(category: CategoryKey) {
+    switch(category) {
+      case 'Casual': return 'bg-blue-500 border-2 border-blue-300';
+      case 'Spicy': return 'bg-pink-500 border-2 border-pink-300';
+      case 'Couples': return 'bg-purple-500 border-2 border-purple-300';
+      default: return 'bg-blue-500 border-2 border-blue-300';
+    }
+  }
 }
