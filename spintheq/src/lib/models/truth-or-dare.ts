@@ -42,6 +42,8 @@ export interface Player {
   passesRemaining: number;
   points: number;
   penaltiesUsed: number; // How many times they've used penalties after passes
+  challengesCompleted: number; // Track how many challenges they've completed
+  challengesFailed: number; // Track how many challenges they've failed
 }
 
 // Challenge type
@@ -51,11 +53,25 @@ export type ChallengeType = 'Truth' | 'Dare';
 export interface GameState {
   players: Player[];
   difficultyLevel: DifficultyLevel;
-  currentPlayerId: string | null;
+  currentPlayerId: string | null; // Player asking the question
+  targetPlayerId: string | null; // Player answering the question
   selectedChallengeType: ChallengeType | null;
   gameStarted: boolean;
   roundInProgress: boolean;
   dealerId: string | null;
+  round: number; // Track the current round number
+  lastAction: string | null; // Track the last action (for displaying history)
+}
+
+// Game action history item
+export interface GameActionHistory {
+  round: number;
+  challengerId: string;
+  targetId: string;
+  challengeType: ChallengeType | null;
+  result: 'completed' | 'passed' | 'penalty' | 'distribution';
+  points?: number;
+  sips?: number;
 }
 
 // Constants for the game

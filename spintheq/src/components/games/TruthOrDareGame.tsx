@@ -4,85 +4,22 @@
 import { useState } from 'react';
 import Button from '../ui/Button';
 import AdBanner from '../ui/AdBanner';
+import DifficultySelector from './DifficultySelector';
+import TruthOrDareBoard from './TruthOrDareBoard';
+import PlayerScoreboard from './PlayerScoreboard';
+import GameHistoryLog from './GameHistoryLog';
 import { 
   DifficultyLevel, 
   GameState, 
   Player,
   STARTING_PASSES,
-  ChallengeType
+  ChallengeType,
+  POINTS_FOR_TRUTH,
+  POINTS_FOR_DARE,
+  GameActionHistory,
+  POINTS_TO_DISTRIBUTE
 } from '@/lib/models/truth-or-dare';
 import { v4 as uuidv4 } from '@/lib/utils/uuid';
-
-// Let's create placeholder components until we implement them
-const DifficultySelector = ({ 
-  selectedDifficulty, 
-  onSelectDifficulty 
-}: { 
-  selectedDifficulty: DifficultyLevel; 
-  onSelectDifficulty: (difficulty: DifficultyLevel) => void 
-}) => (
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-    {(['Light', 'Intermediate', 'Experienced', 'PartyKing'] as DifficultyLevel[]).map(difficulty => (
-      <button
-        key={difficulty}
-        onClick={() => onSelectDifficulty(difficulty)}
-        className={`p-3 rounded-lg transition-colors ${
-          selectedDifficulty === difficulty 
-            ? 'bg-purple-600 text-white' 
-            : 'bg-purple-900/40 text-purple-100'
-        }`}
-      >
-        {difficulty}
-      </button>
-    ))}
-  </div>
-);
-
-const TruthOrDareBoard = ({
-  gameState,
-  onSelectChallengeType,
-  onChallengeComplete,
-  onChallengePass
-}: {
-  gameState: GameState;
-  onSelectChallengeType: (type: ChallengeType) => void;
-  onChallengeComplete: (playerId: string) => void;
-  onChallengePass: (playerId: string) => void;
-  onDistribute?: (fromPlayerId: string, toPlayerId: string, points: number) => void;
-}) => {
-  const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
-  
-  if (!currentPlayer) {
-    return <div>Waiting for player selection...</div>;
-  }
-  
-  return (
-    <div className="bg-purple-800/40 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-purple-400/30">
-      <h3 className="text-xl font-medium mb-4 text-center">
-        {currentPlayer.name}&apos;s Turn
-      </h3>
-      
-      {!gameState.roundInProgress ? (
-        <div className="flex justify-center space-x-4">
-          <Button onClick={() => onSelectChallengeType('Truth')} variant="primary">Truth</Button>
-          <Button onClick={() => onSelectChallengeType('Dare')} variant="secondary">Dare</Button>
-        </div>
-      ) : (
-        <div className="space-y-4 text-center">
-          <p>Selected: {gameState.selectedChallengeType}</p>
-          <div className="flex justify-center space-x-4">
-            <Button onClick={() => onChallengeComplete(currentPlayer.id)} variant="primary">
-              Completed
-            </Button>
-            <Button onClick={() => onChallengePass(currentPlayer.id)} variant="outline">
-              Pass
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function TruthOrDareGame() {
   // Initialize game state
@@ -90,15 +27,22 @@ export default function TruthOrDareGame() {
     players: [],
     difficultyLevel: 'Light',
     currentPlayerId: null,
+    targetPlayerId: null,
     selectedChallengeType: null,
     gameStarted: false,
     roundInProgress: false,
-    dealerId: null
+    dealerId: null,
+    round: 1,
+    lastAction: null
   });
   
   // Additional UI state
   const [playerName, setPlayerName] = useState('');
   const [isDealer, setIsDealer] = useState(false);
+  const [gameHistory, setGameHistory] = useState<GameActionHistory[]>([]);
+  const [distributionMode, setDistributionMode] = useState(false);
+  const [selectedPlayerForDistribution, setSelectedPlayerForDistribution] = useState<string | null>(null);
+  const [distributionAmount, setDistributionAmount] = useState(0);
   
   // Add a player to the game
   const handleAddPlayer = () => {
@@ -109,7 +53,9 @@ export default function TruthOrDareGame() {
         isDealer: isDealer,
         passesRemaining: STARTING_PASSES,
         points: 0,
-        penaltiesUsed: 0
+        penaltiesUsed: 0,
+        challengesCompleted: 0,
+        challengesFailed: 0
       };
       
       // If this is a dealer, remove dealer status from any existing dealers
@@ -174,107 +120,249 @@ export default function TruthOrDareGame() {
     setGameState(prev => ({
       ...prev,
       gameStarted: true,
-      currentPlayerId: startingPlayerId
+      currentPlayerId: startingPlayerId,
+      targetPlayerId: null,
+      round: 1,
+      lastAction: `Game started with ${nonDealerPlayers[randomIndex].name} going first`
+    }));
+  };
+  
+  // Handle selecting a target player for the challenge
+  const handleSelectTargetPlayer = (targetId: string) => {
+    if (!gameState.currentPlayerId || targetId === gameState.currentPlayerId) return;
+    
+    const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+    const targetPlayer = gameState.players.find(p => p.id === targetId);
+    
+    if (!currentPlayer || !targetPlayer) return;
+    
+    setGameState(prev => ({
+      ...prev,
+      targetPlayerId: targetId,
+      lastAction: `${currentPlayer.name} chose to challenge ${targetPlayer.name}`
     }));
   };
   
   // Select a challenge type (Truth or Dare)
-  const selectChallengeType = (type: ChallengeType) => {
+  const handleSelectChallengeType = (type: ChallengeType) => {
+    if (!gameState.currentPlayerId || !gameState.targetPlayerId) return;
+    
+    const targetPlayer = gameState.players.find(p => p.id === gameState.targetPlayerId);
+    if (!targetPlayer) return;
+    
     setGameState(prev => ({
       ...prev,
       selectedChallengeType: type,
-      roundInProgress: true
+      roundInProgress: true,
+      lastAction: `${targetPlayer.name} chose ${type}`
     }));
   };
   
   // Handle when a player completes a challenge
   const handleChallengeComplete = (playerId: string) => {
-    const pointsEarned = gameState.selectedChallengeType === 'Truth' ? 1 : 2;
+    // Ensure we have valid state
+    if (!gameState.currentPlayerId || !gameState.targetPlayerId || !gameState.selectedChallengeType) return;
     
-    // Update player points
+    const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+    const targetPlayer = gameState.players.find(p => p.id === gameState.targetPlayerId);
+    
+    if (!currentPlayer || !targetPlayer) return;
+    
+    // Calculate points based on challenge type
+    const pointsEarned = gameState.selectedChallengeType === 'Truth' ? POINTS_FOR_TRUTH : POINTS_FOR_DARE;
+    
+    // Create a history item
+    const historyItem: GameActionHistory = {
+      round: gameState.round,
+      challengerId: currentPlayer.id,
+      targetId: targetPlayer.id,
+      challengeType: gameState.selectedChallengeType,
+      result: 'completed',
+      points: pointsEarned
+    };
+    
+    // Update game history
+    setGameHistory([...gameHistory, historyItem]);
+    
+    // Update player stats
     setGameState(prev => ({
       ...prev,
       players: prev.players.map(player => 
-        player.id === playerId 
-          ? { ...player, points: player.points + pointsEarned }
+        player.id === targetPlayer.id 
+          ? { 
+              ...player, 
+              points: player.points + pointsEarned,
+              challengesCompleted: player.challengesCompleted + 1 
+            }
           : player
       ),
+      // Move to next round, make the target player the new current player
+      currentPlayerId: prev.targetPlayerId,
+      targetPlayerId: null,
       roundInProgress: false,
-      selectedChallengeType: null
+      selectedChallengeType: null,
+      round: prev.round + 1,
+      lastAction: `${targetPlayer.name} completed the ${prev.selectedChallengeType} and earned ${pointsEarned} point${pointsEarned !== 1 ? 's' : ''}`
     }));
-    
-    // Select next player
-    selectNextPlayer();
   };
   
   // Handle when a player passes on a challenge
   const handleChallengePass = (playerId: string) => {
-    const player = gameState.players.find(p => p.id === playerId);
-    if (!player) return;
+    // Ensure we have valid state
+    if (!gameState.currentPlayerId || !gameState.targetPlayerId || !gameState.selectedChallengeType) return;
     
-    if (player.passesRemaining > 0) {
+    const targetPlayer = gameState.players.find(p => p.id === playerId);
+    if (!targetPlayer) return;
+    
+    if (targetPlayer.passesRemaining > 0) {
       // Use a free pass
+      const historyItem: GameActionHistory = {
+        round: gameState.round,
+        challengerId: gameState.currentPlayerId,
+        targetId: targetPlayer.id,
+        challengeType: gameState.selectedChallengeType,
+        result: 'passed'
+      };
+      
+      setGameHistory([...gameHistory, historyItem]);
+      
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(p => 
           p.id === playerId 
-            ? { ...p, passesRemaining: p.passesRemaining - 1 }
+            ? { 
+                ...p, 
+                passesRemaining: p.passesRemaining - 1,
+                challengesFailed: p.challengesFailed + 1
+              }
             : p
         ),
+        // Move to next round, make the target player the new current player
+        currentPlayerId: prev.targetPlayerId,
+        targetPlayerId: null,
         roundInProgress: false,
-        selectedChallengeType: null
+        selectedChallengeType: null,
+        round: prev.round + 1,
+        lastAction: `${targetPlayer.name} passed using 1 of their free passes (${targetPlayer.passesRemaining - 1} remaining)`
       }));
     } else {
-      // Use a penalty
+      // Calculate penalty based on difficulty and how many times they've used penalties
+      const config = gameState.difficultyLevel === 'Light' ? 1 : 
+                      gameState.difficultyLevel === 'Intermediate' ? 2 :
+                      gameState.difficultyLevel === 'Experienced' ? 3 : 5;
+      
+      const penalty = config + (targetPlayer.penaltiesUsed * (gameState.difficultyLevel === 'PartyKing' ? 3 : 
+                                                            gameState.difficultyLevel === 'Experienced' ? 2 : 1));
+      
+      const historyItem: GameActionHistory = {
+        round: gameState.round,
+        challengerId: gameState.currentPlayerId,
+        targetId: targetPlayer.id,
+        challengeType: gameState.selectedChallengeType,
+        result: 'penalty',
+        sips: penalty
+      };
+      
+      setGameHistory([...gameHistory, historyItem]);
+      
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(p => 
           p.id === playerId 
-            ? { ...p, penaltiesUsed: p.penaltiesUsed + 1 }
+            ? { 
+                ...p, 
+                penaltiesUsed: p.penaltiesUsed + 1,
+                challengesFailed: p.challengesFailed + 1
+              }
             : p
         ),
+        // Move to next round, make the target player the new current player
+        currentPlayerId: prev.targetPlayerId,
+        targetPlayerId: null,
         roundInProgress: false,
-        selectedChallengeType: null
+        selectedChallengeType: null,
+        round: prev.round + 1,
+        lastAction: `${targetPlayer.name} took a penalty of ${penalty} sips`
       }));
     }
-    
-    // Select next player
-    selectNextPlayer();
   };
   
-  // Handle distributing points/sips
-  const handleDistribute = (fromPlayerId: string, toPlayerId: string, points: number) => {
-    if (points <= 0 || !fromPlayerId || !toPlayerId) return;
+  // Handle starting distribution
+  const handleStartDistribution = (playerId: string) => {
+    const player = gameState.players.find(p => p.id === playerId);
+    if (!player || player.points < POINTS_TO_DISTRIBUTE) return;
+    
+    setDistributionMode(true);
+    setDistributionAmount(gameState.difficultyLevel === 'Light' ? 1 : 
+                         gameState.difficultyLevel === 'Intermediate' ? 2 :
+                         gameState.difficultyLevel === 'Experienced' ? 3 : 5);
+    
+    // Set the player as current player if not already
+    if (gameState.currentPlayerId !== playerId) {
+      setGameState(prev => ({
+        ...prev,
+        currentPlayerId: playerId,
+        targetPlayerId: null,
+        roundInProgress: false,
+        selectedChallengeType: null,
+        lastAction: `${player.name} is distributing sips`
+      }));
+    }
+  };
+  
+  // Handle completing distribution
+  const handleCompleteDistribution = () => {
+    if (!gameState.currentPlayerId || !selectedPlayerForDistribution) return;
+    
+    const fromPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+    const toPlayer = gameState.players.find(p => p.id === selectedPlayerForDistribution);
+    
+    if (!fromPlayer || !toPlayer) return;
+    
+    const historyItem: GameActionHistory = {
+      round: gameState.round,
+      challengerId: fromPlayer.id,
+      targetId: toPlayer.id,
+      challengeType: null,
+      result: 'distribution',
+      points: -POINTS_TO_DISTRIBUTE,
+      sips: distributionAmount
+    };
+    
+    setGameHistory([...gameHistory, historyItem]);
     
     // Update player points (subtract from distributing player)
     setGameState(prev => ({
       ...prev,
       players: prev.players.map(player => 
-        player.id === fromPlayerId 
-          ? { ...player, points: Math.max(0, player.points - points) }
+        player.id === fromPlayer.id 
+          ? { ...player, points: Math.max(0, player.points - POINTS_TO_DISTRIBUTE) }
           : player
-      )
+      ),
+      lastAction: `${fromPlayer.name} distributed ${distributionAmount} sips to ${toPlayer.name}`
     }));
+    
+    // Reset distribution mode
+    setDistributionMode(false);
+    setSelectedPlayerForDistribution(null);
+    setDistributionAmount(0);
   };
   
-  // Select the next player for a challenge
-  const selectNextPlayer = () => {
-    // Get all non-dealer players
-    const nonDealerPlayers = gameState.players.filter(p => !p.isDealer);
-    if (nonDealerPlayers.length === 0) return;
-    
-    // Get current player index
-    const currentIndex = nonDealerPlayers.findIndex(p => p.id === gameState.currentPlayerId);
-    
-    // Get next player (circular)
-    const nextIndex = (currentIndex + 1) % nonDealerPlayers.length;
-    const nextPlayerId = nonDealerPlayers[nextIndex].id;
-    
-    setGameState(prev => ({
-      ...prev,
-      currentPlayerId: nextPlayerId,
-    }));
+  // Handle canceling distribution
+  const handleCancelDistribution = () => {
+    setDistributionMode(false);
+    setSelectedPlayerForDistribution(null);
+    setDistributionAmount(0);
   };
+  
+  // Get the current player
+  const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+  
+  // Get the dealer
+  const dealer = gameState.players.find(p => p.id === gameState.dealerId);
+  
+  // Determine if we're in the player selection phase
+  const isPlayerSelectionPhase = !gameState.targetPlayerId && gameState.currentPlayerId && !gameState.roundInProgress;
   
   // Reset the game
   const resetGame = () => {
@@ -283,8 +371,14 @@ export default function TruthOrDareGame() {
       gameStarted: false,
       roundInProgress: false,
       currentPlayerId: null,
-      selectedChallengeType: null
+      targetPlayerId: null,
+      selectedChallengeType: null,
+      round: 1,
+      lastAction: null
     }));
+    setGameHistory([]);
+    setDistributionMode(false);
+    setSelectedPlayerForDistribution(null);
   };
   
   return (
@@ -406,18 +500,194 @@ export default function TruthOrDareGame() {
               Back to Setup
             </Button>
             <div className="px-4 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-sm font-medium shadow-md">
-              <span>{gameState.players.length - 1}</span> Players | <span>{gameState.difficultyLevel}</span> Mode
+              <span>Round {gameState.round}</span> | <span>{gameState.difficultyLevel}</span> Mode
             </div>
           </div>
           
-          {/* Game Board */}
-          <TruthOrDareBoard
-            gameState={gameState}
-            onSelectChallengeType={selectChallengeType}
-            onChallengeComplete={handleChallengeComplete}
-            onChallengePass={handleChallengePass}
-            onDistribute={handleDistribute}
+          {/* Game Status Alert */}
+          {gameState.lastAction && (
+            <div className="bg-gradient-to-r from-blue-900/60 to-purple-900/60 rounded-lg p-3 border border-blue-500/30 text-center">
+              <p className="text-blue-100 text-sm">{gameState.lastAction}</p>
+            </div>
+          )}
+          
+          {/* Dealer Section */}
+          {dealer && (
+            <div className="bg-gradient-to-r from-yellow-900/60 to-amber-900/60 rounded-xl p-4 border border-yellow-500/30 shadow-md">
+              <h3 className="text-lg font-medium mb-2 text-white">Dealer: {dealer.name}</h3>
+              <p className="text-yellow-100 text-sm">
+                The Dealer manages the game, tracks points, and verifies challenge completion.
+              </p>
+            </div>
+          )}
+          
+          {/* Player Scoreboard */}
+          <PlayerScoreboard 
+            players={gameState.players}
+            difficultyLevel={gameState.difficultyLevel}
+            currentPlayerId={gameState.currentPlayerId}
+            targetPlayerId={gameState.targetPlayerId}
+            onStartDistribution={distributionMode ? undefined : handleStartDistribution}
+            distributionInProgress={distributionMode}
+            onPlayerSelect={isPlayerSelectionPhase ? handleSelectTargetPlayer : undefined}
+            selectionPhase={isPlayerSelectionPhase}
           />
+          
+          {/* Game Flow Sections */}
+          {/* 1. Player Selection Phase */}
+          {isPlayerSelectionPhase && currentPlayer && !distributionMode && (
+            <div className="bg-gradient-to-r from-indigo-900/60 to-blue-900/60 rounded-xl p-6 border border-indigo-500/30 shadow-md text-center">
+              <h3 className="text-xl font-medium mb-4 text-center text-white">
+                {currentPlayer.name}&apos;s Turn to Choose
+              </h3>
+              <p className="text-blue-100 mb-4">
+                {currentPlayer.name} must select someone to challenge.
+              </p>
+              <p className="text-yellow-200 text-sm">
+                Click on a player above to select them.
+              </p>
+            </div>
+          )}
+          
+          {/* 2. Challenge Type Selection Phase */}
+          {gameState.targetPlayerId && !gameState.selectedChallengeType && !distributionMode && (
+            <div className="bg-gradient-to-r from-indigo-900/60 to-violet-900/60 rounded-xl p-6 border border-indigo-500/30 shadow-md text-center">
+              <h3 className="text-xl font-medium mb-4 text-center text-white">
+                {currentPlayer?.name} is challenging {gameState.players.find(p => p.id === gameState.targetPlayerId)?.name}
+              </h3>
+              
+              <p className="text-blue-100 mb-4">
+                Choose your challenge:
+              </p>
+              
+              <div className="flex justify-center space-x-4">
+                <Button
+                  onClick={() => handleSelectChallengeType('Truth')}
+                  variant="primary"
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-500 challenge-btn"
+                >
+                  Truth (+{POINTS_FOR_TRUTH} point)
+                </Button>
+                <Button
+                  onClick={() => handleSelectChallengeType('Dare')}
+                  variant="secondary"
+                  size="lg"
+                  className="bg-pink-600 hover:bg-pink-500 challenge-btn"
+                >
+                  Dare (+{POINTS_FOR_DARE} points)
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* 3. Challenge Progress Phase */}
+          {gameState.selectedChallengeType && gameState.roundInProgress && !distributionMode && (
+            <div className="bg-gradient-to-r from-indigo-900/60 to-blue-900/60 rounded-xl p-6 border border-indigo-500/30 shadow-md text-center">
+              <h3 className="text-xl font-medium mb-2 text-white">
+                {currentPlayer?.name} ➝ {gameState.players.find(p => p.id === gameState.targetPlayerId)?.name}: {gameState.selectedChallengeType}
+              </h3>
+              
+              <div className="bg-indigo-800/50 rounded-lg p-4 border border-indigo-500/30 mb-4">
+                <p className="text-blue-100">
+                  The Dealer should now ask {gameState.players.find(p => p.id === gameState.targetPlayerId)?.name} a {gameState.selectedChallengeType?.toLowerCase()} question 
+                  or assign a {gameState.selectedChallengeType?.toLowerCase()} challenge.
+                </p>
+              </div>
+              
+              <div className="flex justify-center space-x-4">
+                <Button
+                  onClick={() => handleChallengeComplete(gameState.targetPlayerId!)}
+                  variant="primary"
+                  size="lg"
+                >
+                  Completed!
+                </Button>
+                
+                <Button
+                  onClick={() => handleChallengePass(gameState.targetPlayerId!)}
+                  variant="outline"
+                  size="lg"
+                >
+                  {gameState.players.find(p => p.id === gameState.targetPlayerId)?.passesRemaining! > 0 
+                    ? `Pass (${gameState.players.find(p => p.id === gameState.targetPlayerId)?.passesRemaining} left)` 
+                    : `Skip (${gameState.difficultyLevel === 'Light' ? 1 : gameState.difficultyLevel === 'Intermediate' ? 2 : gameState.difficultyLevel === 'Experienced' ? 3 : 5} + ${gameState.players.find(p => p.id === gameState.targetPlayerId)?.penaltiesUsed! * (gameState.difficultyLevel === 'PartyKing' ? 3 : gameState.difficultyLevel === 'Experienced' ? 2 : 1)} sips)`}
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Distribution Mode */}
+          {distributionMode && currentPlayer && (
+            <div className="bg-gradient-to-r from-pink-900/60 to-red-900/60 rounded-xl p-6 border border-pink-500/30 shadow-md">
+              <h3 className="text-xl font-medium mb-4 text-center text-white">
+                {currentPlayer.name} is Distributing Sips
+              </h3>
+              
+              <p className="text-pink-100 mb-4 text-center">
+                Select a player to receive {distributionAmount} sips:
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                {gameState.players
+                  .filter(player => player.id !== currentPlayer.id && !player.isDealer)
+                  .map((player) => (
+                    <button
+                      key={player.id}
+                      onClick={() => setSelectedPlayerForDistribution(player.id)}
+                      className={`
+                        p-3 rounded-lg border transition-colors
+                        ${selectedPlayerForDistribution === player.id
+                          ? 'bg-pink-600 border-pink-300 shadow-md'
+                          : 'bg-pink-800/40 border-pink-600/30 hover:bg-pink-700/50'}
+                      `}
+                    >
+                      {player.name}
+                    </button>
+                  ))}
+              </div>
+              
+              <div className="flex justify-center space-x-4">
+                <Button
+                  onClick={handleCompleteDistribution}
+                  disabled={!selectedPlayerForDistribution}
+                  variant="secondary"
+                  size="lg"
+                >
+                  Confirm
+                </Button>
+                
+                <Button
+                  onClick={handleCancelDistribution}
+                  variant="outline"
+                  size="lg"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Game History */}
+          {gameHistory.length > 0 && (
+            <GameHistoryLog 
+              history={gameHistory} 
+              gameState={gameState} 
+              maxEntries={5} 
+            />
+          )}
+          
+          {/* Current Game Status */}
+          <div className="bg-purple-900/30 rounded-lg p-4 border border-purple-500/20">
+            <h4 className="font-medium mb-2 text-pink-200">Game Rules</h4>
+            <ul className="space-y-1 text-sm text-white">
+              <li>• Complete a Truth: +1 point</li>
+              <li>• Complete a Dare: +2 points</li>
+              <li>• Reach 5 points to distribute sips</li>
+              <li>• Each player starts with 2 free passes</li>
+              <li>• After passes are used, penalties increase by {gameState.difficultyLevel === 'PartyKing' ? 3 : gameState.difficultyLevel === 'Experienced' ? 2 : 1} sip(s) each time</li>
+            </ul>
+          </div>
           
           {/* Ad Banner */}
           <AdBanner position="bottom" />

@@ -32,11 +32,13 @@ export default function TruthOrDarePage() {
         <ol className="list-decimal pl-5 space-y-2 text-purple-50">
           <li>Add all players who are participating, including a Dealer</li>
           <li>Select the drinking difficulty level based on your group</li>
+          <li>The active player selects someone else to challenge</li>
+          <li>The challenged player chooses Truth or Dare</li>
+          <li>The Dealer comes up with a challenge based on the choice</li>
           <li>Each player gets 2 free passes to skip a Truth or Dare</li>
-          <li>After using passes, rejections result in drinking penalties</li>
+          <li>After using passes, rejections result in drinking penalties that increase over time</li>
           <li>Earn 1 point for completing a Truth, 2 points for a Dare</li>
           <li>When a player reaches 5 points, they can distribute sips to others</li>
-          <li>The Dealer tracks points, passes, and manages the game</li>
         </ol>
       </div>
     </div>

@@ -11,6 +11,22 @@ interface DifficultySelectorProps {
 export default function DifficultySelector({ selectedDifficulty, onSelectDifficulty }: DifficultySelectorProps) {
   const difficulties: DifficultyLevel[] = ['Light', 'Intermediate', 'Experienced', 'PartyKing'];
   
+  // Get difficulty description
+  const getDifficultyDescription = (difficulty: DifficultyLevel): string => {
+    switch(difficulty) {
+      case 'Light':
+        return "Perfect for casual games - minimal penalties";
+      case 'Intermediate':
+        return "Balanced penalties that gradually increase";
+      case 'Experienced':
+        return "Challenging penalties for those who skip often";
+      case 'PartyKing':
+        return "Maximum penalties for the ultimate challenge";
+      default:
+        return "";
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -32,7 +48,9 @@ export default function DifficultySelector({ selectedDifficulty, onSelectDifficu
       </div>
       
       <div className="bg-purple-900/30 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20">
-        <h4 className="font-medium mb-2 text-pink-200">Difficulty Details</h4>
+        <h4 className="font-medium mb-2 text-pink-200">{selectedDifficulty} Mode</h4>
+        <p className="text-sm text-white mb-3">{getDifficultyDescription(selectedDifficulty)}</p>
+        
         <ul className="space-y-2 text-sm text-white">
           <li className="flex justify-between">
             <span>Starting Penalty:</span>
