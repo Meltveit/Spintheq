@@ -157,12 +157,12 @@ export default function SpinBottle({ players, onPlayerSelected, onSpinStart, cat
       <div className={`relative w-72 h-72 md:w-96 md:h-96 rounded-full border-4 ${getBorderColor()} ${getBackgroundColor()} backdrop-blur-sm mb-6 ${getGlowColor()}`}>
         {/* Place players around the circle */}
         {players.map((player, index) => {
-          // Calculate the position on the circle
+          // Calculate the position on the circle (0 degrees at the top, moving clockwise)
           const angle = (index * (360 / players.length)) * (Math.PI / 180);
-          // Set radius to move players closer to bottle but not too close
-          const radius = players.length > 6 ? 70 : 80; 
-          const left = 50 + Math.cos(angle) * radius;
-          const top = 50 + Math.sin(angle) * radius;
+          // Set radius to position players along the circle edge
+          const radius = 85; 
+          const left = 50 + Math.sin(angle) * radius;
+          const top = 50 - Math.cos(angle) * radius;
           
           return (
             <div
@@ -181,31 +181,35 @@ export default function SpinBottle({ players, onPlayerSelected, onSpinStart, cat
           );
         })}
         
-        {/* Enhanced Bottle */}
+        {/* Wine Bottle using fixed dimensions */}
         <div 
-          className="absolute top-1/2 left-1/2 origin-top transform -translate-x-1/2 -translate-y-0 transition-transform duration-3000 ease-out"
+          className="absolute top-1/2 left-1/2 origin-center transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-3000 ease-out z-20"
           style={{ 
-            transform: `translate(-50%, 0) rotate(${rotation}deg)`,
-            height: '55%',
-            width: '16%'
+            transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
           }}
         >
-          {/* Bottle body */}
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-full h-3/4 bg-gradient-to-b from-amber-700 to-amber-900 rounded-md overflow-hidden">
-            {/* Bottle shine */}
-            <div className="absolute top-0 left-1/4 w-1/4 h-full bg-amber-600/20 rounded-full"></div>
+          {/* Using a custom bottle design with fixed pixel dimensions */}
+          <div className="w-8 h-36 relative flex items-center justify-center">
+            {/* Cork */}
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-amber-300 rounded-t-sm z-30"></div>
             
-            {/* Bottle label */}
-            <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-4/5 h-1/2 bg-white/90 rounded flex items-center justify-center">
-              <div className="text-amber-800 font-bold text-xs transform rotate-90">SpinTheQ</div>
+            {/* Bottleneck */}
+            <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-2 h-10 bg-gradient-to-b from-amber-800 to-amber-900 rounded-sm z-20"></div>
+            
+            {/* Bottle Shoulder */}
+            <div className="absolute top-13 left-1/2 transform -translate-x-1/2 w-6 h-4 bg-gradient-to-b from-amber-900 to-amber-950 rounded-b-full z-20"></div>
+            
+            {/* Bottle Body */}
+            <div className="absolute top-17 left-1/2 transform -translate-x-1/2 w-7 h-19 bg-gradient-to-b from-amber-950 to-amber-900 rounded-md overflow-hidden z-10">
+              {/* Bottle Shine */}
+              <div className="absolute top-0 left-1 w-1.5 h-full bg-amber-500/10 rounded-full"></div>
+              
+              {/* Bottle Label */}
+              <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-6 h-7 bg-white/90 border border-amber-200/30 rounded-sm flex items-center justify-center">
+                <div className="text-amber-800 font-bold text-[0.5rem]">SpinTheQ</div>
+              </div>
             </div>
           </div>
-          
-          {/* Bottle neck */}
-          <div className="absolute bottom-[75%] left-1/2 transform -translate-x-1/2 w-1/2 h-1/6 bg-amber-800 rounded-sm"></div>
-          
-          {/* Bottle cap */}
-          <div className="absolute bottom-[91%] left-1/2 transform -translate-x-1/2 w-2/3 h-[8%] bg-amber-600 rounded-full"></div>
         </div>
       </div>
       
