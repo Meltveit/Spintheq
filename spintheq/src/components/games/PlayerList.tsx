@@ -1,14 +1,11 @@
+'use client';
+
 import { useState } from 'react';
 
-interface PlayerWithId {
-  id: number;
-  name: string;
-}
-
 interface PlayerListProps {
-  players: PlayerWithId[];
+  players: string[];
   onAddPlayer: (name: string) => void;
-  onRemovePlayer: (id: number) => void;
+  onRemovePlayer: (index: number) => void;
 }
 
 export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: PlayerListProps) {
@@ -50,16 +47,16 @@ export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: Pla
         <p className="text-blue-300 text-center py-4">Add at least 2 players to start the game</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {players.map((player) => (
+          {players.map((player, index) => (
             <div 
-              key={player.id} 
+              key={index} 
               className="bg-blue-500 py-1 px-3 rounded-full flex items-center"
             >
-              <span className="mr-2">{player.name}</span>
+              <span className="mr-2">{player}</span>
               <button 
-                onClick={() => onRemovePlayer(player.id)}
+                onClick={() => onRemovePlayer(index)}
                 className="text-blue-300 hover:text-white transition-colors"
-                aria-label={`Remove ${player.name}`}
+                aria-label={`Remove ${player}`}
               >
                 ✕
               </button>

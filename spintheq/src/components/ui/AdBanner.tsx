@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef } from 'react';
 
 interface AdBannerProps {
@@ -58,25 +60,3 @@ export default function AdBanner({ position, className = '' }: AdBannerProps) {
     </div>
   );
 }
-
-// Instructions for implementing Google AdSense (for future reference):
-// 
-// 1. Sign up for Google AdSense (https://www.google.com/adsense)
-// 
-// 2. Once approved, get your AdSense publisher ID
-// 
-// 3. Add the AdSense script to _document.js or in a useEffect hook:
-//    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR-AD-CLIENT-ID" crossOrigin="anonymous"></script>
-// 
-// 4. For each ad unit:
-//    - Create ad units in the AdSense dashboard
-//    - Get the ad unit ID
-//    - Replace the placeholder with actual ad code:
-//      <ins className="adsbygoogle"
-//           style={{ display: 'block' }}
-//           data-ad-client="YOUR-AD-CLIENT-ID"
-//           data-ad-slot="YOUR-AD-SLOT-ID"
-//           data-ad-format="auto"
-//           data-full-width-responsive="true"></ins>
-//    - Initialize the ad:
-//      (window.adsbygoogle = window.adsbygoogle || []).push({});

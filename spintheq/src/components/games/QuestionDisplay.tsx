@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Question, CategoryKey } from '../../lib/content/spin-the-bottle';
 import { categories as bottleCategories } from '../../lib/content/spin-the-bottle';
@@ -51,7 +53,7 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
   return (
     <div className="w-full max-w-md bg-blue-700/50 backdrop-blur-sm rounded-xl p-6">
       <h3 className="text-xl font-bold mb-4 text-center">
-        {selectedPlayer}&#39;s Turn
+        {selectedPlayer}'s Turn
       </h3>
       
       {category && (
