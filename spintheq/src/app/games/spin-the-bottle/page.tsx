@@ -27,15 +27,15 @@ export default function SpinTheBottlePage() {
       <SpinTheBottleGame />
       
       {/* Game Instructions */}
-      <div className="w-full max-w-xl bg-blue-700/50 backdrop-blur-sm rounded-xl p-6 mt-8 border border-blue-400/30 shadow-lg">
+      <div className="w-full max-w-xl bg-gradient-to-r from-purple-900/50 to-red-900/50 backdrop-blur-sm rounded-xl p-6 mt-8 border border-purple-400/30 shadow-lg">
         <h2 className="text-xl font-semibold mb-2 text-white">How to Play</h2>
         <ol className="list-decimal pl-5 space-y-2 text-blue-50">
           <li>Add all players who are participating</li>
           <li>Select question categories you want to include</li>
           <li>Click the <strong>Start Game</strong> button to begin</li>
-          <li>The app will randomly select a player and question</li>
+          <li>Spin the bottle to randomly select a player</li>
           <li>The selected player answers the question or completes the challenge</li>
-          <li>Continue playing by clicking the <strong>Next Question</strong> button after each round</li>
+          <li>Continue playing by spinning the bottle again for the next round</li>
         </ol>
       </div>
     </div>

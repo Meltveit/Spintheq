@@ -1,6 +1,23 @@
+// src/components/games/PlayerList.tsx
 'use client';
 
 import { useState } from 'react';
+
+// Color palette for the player list items
+const playerListColors = [
+  'bg-pink-500',
+  'bg-purple-500',
+  'bg-indigo-500',
+  'bg-blue-500',
+  'bg-teal-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-orange-500',
+  'bg-red-500',
+  'bg-emerald-500',
+  'bg-sky-500',
+  'bg-amber-500',
+];
 
 interface PlayerListProps {
   players: string[];
@@ -21,7 +38,7 @@ export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: Pla
   
   return (
     <div className="w-full">
-      <h3 className="text-lg font-medium mb-3">Players</h3>
+      <h3 className="text-lg font-medium mb-3 text-white">Players</h3>
       
       {/* Add player form */}
       <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
@@ -30,12 +47,12 @@ export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: Pla
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           placeholder="Enter player name"
-          className="flex-1 p-2 rounded bg-blue-800 border border-blue-500 text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+          className="flex-1 p-2 rounded bg-indigo-800/70 border border-indigo-400 text-white placeholder-indigo-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
           maxLength={20}
         />
         <button 
           type="submit"
-          className="bg-blue-500 hover:bg-blue-400 py-2 px-4 rounded font-medium transition-colors"
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 py-2 px-4 rounded font-medium transition-colors text-white shadow-md"
           disabled={!playerName.trim()}
         >
           Add
@@ -44,18 +61,18 @@ export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: Pla
       
       {/* Player list */}
       {players.length === 0 ? (
-        <p className="text-blue-300 text-center py-4">Add at least 2 players to start the game</p>
+        <p className="text-indigo-100 text-center py-4">Add at least 2 players to start the game</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {players.map((player, index) => (
             <div 
               key={index} 
-              className="bg-blue-500 py-1 px-3 rounded-full flex items-center"
+              className={`${playerListColors[index % playerListColors.length]} py-1 px-3 rounded-full flex items-center shadow-md border border-white/20`}
             >
-              <span className="mr-2">{player}</span>
+              <span className="mr-2 text-white font-medium">{player}</span>
               <button 
                 onClick={() => onRemovePlayer(index)}
-                className="text-blue-300 hover:text-white transition-colors"
+                className="text-white/80 hover:text-white transition-colors"
                 aria-label={`Remove ${player}`}
               >
                 ✕
@@ -72,7 +89,7 @@ export default function PlayerList({ players, onAddPlayer, onRemovePlayer }: Pla
       
       {/* Player count */}
       {players.length > 0 && (
-        <p className="text-blue-200 text-sm mt-4">
+        <p className="text-indigo-100 text-sm mt-4">
           {players.length} player{players.length !== 1 ? 's' : ''} added
         </p>
       )}

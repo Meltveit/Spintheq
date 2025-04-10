@@ -8,10 +8,9 @@ import { categories as bottleCategories } from '../../lib/content/spin-the-bottl
 interface QuestionDisplayProps {
   selectedPlayer: string | null;
   categories: CategoryKey[];
-  onNextQuestion: () => void;
 }
 
-export default function QuestionDisplay({ selectedPlayer, categories, onNextQuestion }: QuestionDisplayProps) {
+export default function QuestionDisplay({ selectedPlayer, categories }: QuestionDisplayProps) {
   const [question, setQuestion] = useState<Question | null>(null);
   const [category, setCategory] = useState<CategoryKey | null>(null);
 
@@ -65,11 +64,7 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
   };
 
   if (!selectedPlayer) {
-    return (
-      <div className="w-full max-w-md bg-blue-700/50 backdrop-blur-sm rounded-xl p-6 text-center border border-blue-400/30 shadow-lg mx-auto">
-        <p className="text-lg text-blue-50">Spin the bottle to select a player</p>
-      </div>
-    );
+    return null; // Don't render anything when no player is selected
   }
 
   return (
@@ -86,7 +81,7 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
         </div>
       )}
       
-      <div className={`${getQuestionBgColor(category)} rounded-lg p-4 mb-6 min-h-24 flex flex-col items-center justify-center border shadow-inner`}>
+      <div className={`${getQuestionBgColor(category)} rounded-lg p-4 mb-4 min-h-24 flex flex-col items-center justify-center border shadow-inner`}>
         <p className="text-xl text-center mb-2 text-white">{question?.text}</p>
         
         <div className="flex flex-wrap gap-2 justify-center mt-3">
@@ -114,15 +109,6 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
             </div>
           )}
         </div>
-      </div>
-      
-      <div className="text-center">
-        <button
-          onClick={onNextQuestion}
-          className="bg-blue-500 hover:bg-blue-400 px-6 py-3 rounded-lg font-bold transition-colors text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
-        >
-          Next Question
-        </button>
       </div>
     </div>
   );

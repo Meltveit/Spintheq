@@ -14,6 +14,7 @@ export default function SpinTheBottleGame() {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(['Casual']);
+  const [currentCategory, setCurrentCategory] = useState<CategoryKey>('Casual');
   
   const availableCategories: CategoryKey[] = ['Casual', 'Spicy', 'Couples'];
   
@@ -29,14 +30,17 @@ export default function SpinTheBottleGame() {
     setPlayers(players.filter((_, i) => i !== index));
   };
   
-  // Handle the bottle pointing to a player
-  const handlePlayerSelected = (player: string) => {
-    setSelectedPlayer(player);
+  // Handle when spinning starts - clear the selected player
+  const handleSpinStart = () => {
+    setSelectedPlayer(null);
   };
   
-  // Handle next question (reset the selected player)
-  const handleNextQuestion = () => {
-    setSelectedPlayer(null);
+  // Handle the bottle pointing to a player
+  const handlePlayerSelected = (player: string) => {
+    // Select a random category from the enabled categories
+    const randomCategory = selectedCategories[Math.floor(Math.random() * selectedCategories.length)];
+    setCurrentCategory(randomCategory);
+    setSelectedPlayer(player);
   };
   
   // Toggle category selection
@@ -48,6 +52,16 @@ export default function SpinTheBottleGame() {
       }
     } else {
       setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+  
+  // Get the background color based on category
+  const getBackgroundColor = (cat: CategoryKey) => {
+    switch(cat) {
+      case 'Casual': return 'from-blue-900/60 to-indigo-900/60 border-blue-500/20';
+      case 'Spicy': return 'from-pink-900/60 to-red-900/60 border-pink-500/20';
+      case 'Couples': return 'from-purple-900/60 to-fuchsia-900/60 border-purple-500/20';
+      default: return 'from-indigo-900/60 to-blue-900/60 border-indigo-500/20';
     }
   };
   
@@ -71,7 +85,7 @@ export default function SpinTheBottleGame() {
         // Game setup screen
         <div className="space-y-8">
           {/* Player Input */}
-          <div className="bg-blue-700/50 backdrop-blur-sm rounded-xl p-6">
+          <div className="bg-gradient-to-r from-purple-900 to-fuchsia-900 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-purple-400/30">
             <PlayerList 
               players={players} 
               onAddPlayer={handleAddPlayer} 
@@ -83,17 +97,17 @@ export default function SpinTheBottleGame() {
           <AdBanner position="middle" />
           
           {/* Category Selection */}
-          <div className="bg-blue-700/50 backdrop-blur-sm rounded-xl p-6">
-            <h3 className="text-lg font-medium mb-3">Choose Categories</h3>
+          <div className="bg-gradient-to-r from-red-900 to-amber-900 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-red-400/30">
+            <h3 className="text-lg font-medium mb-3 text-white">Choose Categories</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {availableCategories.map(category => (
                 <button 
                   key={category}
                   onClick={() => toggleCategory(category)}
-                  className={`p-2 rounded-lg transition-colors text-center ${
+                  className={`p-2 rounded-lg transition-colors text-center text-white ${
                     selectedCategories.includes(category)
                       ? getCategoryButtonColor(category)
-                      : 'bg-blue-800 border-2 border-blue-600 hover:bg-blue-700'
+                      : 'bg-slate-900/60 border-2 border-slate-700 hover:bg-slate-800'
                   }`}
                 >
                   {category}
@@ -127,22 +141,25 @@ export default function SpinTheBottleGame() {
             <Button onClick={resetGame} variant="outline" size="sm">
               Back to Setup
             </Button>
-            <div className="px-3 py-1 bg-blue-600 rounded-full text-sm">
-              <span className="font-medium">{players.length}</span> Players
+            <div className="px-4 py-1.5 bg-gradient-to-r from-red-600 to-amber-600 rounded-full text-sm font-medium shadow-md">
+              <span>{players.length}</span> Players
             </div>
           </div>
           
           {/* Bottle Spinner */}
-          <SpinBottleClient 
-            players={players} 
-            onPlayerSelected={handlePlayerSelected} 
-          />
+          <div className={`bg-gradient-to-b ${getBackgroundColor(currentCategory)} rounded-xl p-6 backdrop-blur-sm shadow-lg border`}>
+            <SpinBottleClient 
+              players={players} 
+              onPlayerSelected={handlePlayerSelected}
+              onSpinStart={handleSpinStart}
+              category={currentCategory}
+            />
+          </div>
           
           {/* Question Display */}
           <QuestionDisplay 
             selectedPlayer={selectedPlayer}
-            categories={selectedCategories}
-            onNextQuestion={handleNextQuestion}
+            categories={[currentCategory]}
           />
           
           {/* Ad Banner */}
@@ -155,10 +172,10 @@ export default function SpinTheBottleGame() {
   // Helper function for category button colors
   function getCategoryButtonColor(category: CategoryKey) {
     switch(category) {
-      case 'Casual': return 'bg-blue-500 border-2 border-blue-300';
-      case 'Spicy': return 'bg-pink-500 border-2 border-pink-300';
-      case 'Couples': return 'bg-purple-500 border-2 border-purple-300';
-      default: return 'bg-blue-500 border-2 border-blue-300';
+      case 'Casual': return 'bg-blue-600 border-2 border-blue-400 shadow-md';
+      case 'Spicy': return 'bg-pink-600 border-2 border-pink-400 shadow-md';
+      case 'Couples': return 'bg-purple-600 border-2 border-purple-400 shadow-md';
+      default: return 'bg-blue-600 border-2 border-blue-400 shadow-md';
     }
   }
 }

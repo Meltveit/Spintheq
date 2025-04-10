@@ -3,13 +3,16 @@
 
 import { useState, useEffect } from 'react';
 import SpinBottle from './SpinBottle';
+import { CategoryKey } from '../../lib/content/spin-the-bottle';
 
 interface SpinBottleClientProps {
   players: string[];
   onPlayerSelected: (player: string) => void;
+  onSpinStart: () => void;
+  category: CategoryKey;
 }
 
-export default function SpinBottleClient({ players, onPlayerSelected }: SpinBottleClientProps) {
+export default function SpinBottleClient({ players, onPlayerSelected, onSpinStart, category }: SpinBottleClientProps) {
   const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
@@ -20,5 +23,10 @@ export default function SpinBottleClient({ players, onPlayerSelected }: SpinBott
     return <div className="text-center p-4">Loading spinner...</div>;
   }
   
-  return <SpinBottle players={players} onPlayerSelected={onPlayerSelected} />;
+  return <SpinBottle 
+    players={players} 
+    onPlayerSelected={onPlayerSelected} 
+    onSpinStart={onSpinStart}
+    category={category}
+  />;
 }
