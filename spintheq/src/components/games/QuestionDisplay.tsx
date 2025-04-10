@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
+import { Question, CategoryKey } from '../../lib/content/spin-the-bottle';
+import { categories as bottleCategories } from '../../lib/content/spin-the-bottle';
 
 interface QuestionDisplayProps {
   selectedPlayer: string | null;
-  categories: string[];
+  categories: CategoryKey[];
   onNextQuestion: () => void;
 }
 
 export default function QuestionDisplay({ selectedPlayer, categories, onNextQuestion }: QuestionDisplayProps) {
-  const [question, setQuestion] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [category, setCategory] = useState<CategoryKey | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
 
   // Generate a random question when selectedPlayer changes
@@ -19,58 +21,14 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
       setQuestion(null);
       setCategory(null);
       
-      // Simulate fetching a random question (this would come from your database in a real app)
+      // Get a random category from the enabled categories
       const randomCategory = categories[Math.floor(Math.random() * categories.length)];
       setCategory(randomCategory);
       
-      // Random question based on category (placeholder - would come from actual data)
-      const questions: Record<string, string[]> = {
-        'Casual': [
-          'What's your favorite movie of all time?',
-          'If you could have dinner with any historical figure, who would it be?',
-          'What's your go-to karaoke song?',
-          'What's the most embarrassing thing that happened to you in school?',
-          'If you had to eat one food for the rest of your life, what would it be?'
-        ],
-        'Spicy': [
-          'Have you ever kissed someone in this room? If yes, who?',
-          'What's your biggest turn off?',
-          'What's your biggest turn on?',
-          'Have you ever been caught doing something you shouldn't?',
-          'What's the wildest thing on your bucket list?'
-        ],
-        'Couples': [
-          'What was your first impression of your partner?',
-          'What's one thing your partner does that you find adorable?',
-          'What's your favorite memory together?',
-          'If you could change one thing about your relationship, what would it be?',
-          'What's something you've always wanted to tell your partner but haven't?'
-        ],
-        'Boys Night': [
-          'Most embarrassing rejection story?',
-          'What's your go-to pickup line?',
-          'Best prank you've ever pulled?',
-          'Most ridiculous thing you've done to impress someone?',
-          'What's your secret talent that no one knows about?'
-        ],
-        'Girls Night': [
-          'Who was your first celebrity crush?',
-          'What's the worst fashion mistake you've ever made?',
-          'What's the most expensive thing you've bought on impulse?',
-          'What's one beauty secret you swear by?',
-          'What's the pettiest reason you've ended a relationship?'
-        ],
-        'Friendship': [
-          'What do you value most in a friendship?',
-          'What's one thing you appreciate about someone in this room?',
-          'What's the best gift you've ever received from a friend?',
-          'If you could take one person from this room on a trip, who would it be and where would you go?',
-          'What's your favorite memory with someone in this room?'
-        ]
-      };
-
-      // Fallback to casual if the category doesn't exist in our mock data
-      const categoryQuestions = questions[randomCategory] || questions['Casual'];
+      // Get questions for the selected category from our imported data
+      const categoryQuestions = bottleCategories[randomCategory];
+      
+      // Select a random question from the category
       const randomQuestion = categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
       
       setQuestion(randomQuestion);
@@ -115,8 +73,32 @@ export default function QuestionDisplay({ selectedPlayer, categories, onNextQues
         </div>
       ) : (
         <>
-          <div className="bg-blue-800 rounded-lg p-4 mb-6 min-h-24 flex items-center justify-center">
-            <p className="text-xl text-center">{question}</p>
+          <div className="bg-blue-800 rounded-lg p-4 mb-6 min-h-24 flex flex-col items-center justify-center">
+            <p className="text-xl text-center mb-2">{question?.text}</p>
+            
+            {question?.playerInteraction && (
+              <div className="mt-2 bg-blue-700 px-3 py-1 rounded text-sm">
+                Involves another player
+              </div>
+            )}
+            
+            {question?.skipAction && (
+              <div className="mt-2 bg-yellow-600 px-3 py-1 rounded text-sm">
+                Skip penalty: {question.skipAction}
+              </div>
+            )}
+            
+            {question?.drinkAction && (
+              <div className="mt-2 bg-purple-600 px-3 py-1 rounded text-sm">
+                {question.drinkAction}
+              </div>
+            )}
+
+            {question?.distributeAction && (
+              <div className="mt-2 bg-green-600 px-3 py-1 rounded text-sm">
+                Player can distribute 1-5 sips
+              </div>
+            )}
           </div>
           
           <div className="text-center">
