@@ -1,15 +1,4 @@
-// Reset the game
-const resetGame = () => {
-    setGameState(prev => ({
-      ...prev,
-      gameStarted: false,
-      roundInProgress: false,
-      currentPlayerId: null,
-      selectedChallengeType: null
-    }));
-  };// Import the components properly here
-import DifficultySelector from './DifficultySelector';
-import TruthOrDareBoard from './TruthOrDareBoard';// src/components/games/TruthOrDareGame.tsx
+// src/components/games/TruthOrDareGame.tsx
 'use client';
 
 import { useState } from 'react';
@@ -19,9 +8,81 @@ import {
   DifficultyLevel, 
   GameState, 
   Player,
-  STARTING_PASSES 
+  STARTING_PASSES,
+  ChallengeType
 } from '@/lib/models/truth-or-dare';
 import { v4 as uuidv4 } from '@/lib/utils/uuid';
+
+// Let's create placeholder components until we implement them
+const DifficultySelector = ({ 
+  selectedDifficulty, 
+  onSelectDifficulty 
+}: { 
+  selectedDifficulty: DifficultyLevel; 
+  onSelectDifficulty: (difficulty: DifficultyLevel) => void 
+}) => (
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    {(['Light', 'Intermediate', 'Experienced', 'PartyKing'] as DifficultyLevel[]).map(difficulty => (
+      <button
+        key={difficulty}
+        onClick={() => onSelectDifficulty(difficulty)}
+        className={`p-3 rounded-lg transition-colors ${
+          selectedDifficulty === difficulty 
+            ? 'bg-purple-600 text-white' 
+            : 'bg-purple-900/40 text-purple-100'
+        }`}
+      >
+        {difficulty}
+      </button>
+    ))}
+  </div>
+);
+
+const TruthOrDareBoard = ({
+  gameState,
+  onSelectChallengeType,
+  onChallengeComplete,
+  onChallengePass
+}: {
+  gameState: GameState;
+  onSelectChallengeType: (type: ChallengeType) => void;
+  onChallengeComplete: (playerId: string) => void;
+  onChallengePass: (playerId: string) => void;
+  onDistribute?: (fromPlayerId: string, toPlayerId: string, points: number) => void;
+}) => {
+  const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+  
+  if (!currentPlayer) {
+    return <div>Waiting for player selection...</div>;
+  }
+  
+  return (
+    <div className="bg-purple-800/40 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-purple-400/30">
+      <h3 className="text-xl font-medium mb-4 text-center">
+        {currentPlayer.name}&apos;s Turn
+      </h3>
+      
+      {!gameState.roundInProgress ? (
+        <div className="flex justify-center space-x-4">
+          <Button onClick={() => onSelectChallengeType('Truth')} variant="primary">Truth</Button>
+          <Button onClick={() => onSelectChallengeType('Dare')} variant="secondary">Dare</Button>
+        </div>
+      ) : (
+        <div className="space-y-4 text-center">
+          <p>Selected: {gameState.selectedChallengeType}</p>
+          <div className="flex justify-center space-x-4">
+            <Button onClick={() => onChallengeComplete(currentPlayer.id)} variant="primary">
+              Completed
+            </Button>
+            <Button onClick={() => onChallengePass(currentPlayer.id)} variant="outline">
+              Pass
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function TruthOrDareGame() {
   // Initialize game state
@@ -52,7 +113,7 @@ export default function TruthOrDareGame() {
       };
       
       // If this is a dealer, remove dealer status from any existing dealers
-      let updatedPlayers = gameState.players;
+      let updatedPlayers = [...gameState.players];
       if (isDealer) {
         updatedPlayers = updatedPlayers.map(player => ({
           ...player,
@@ -103,25 +164,22 @@ export default function TruthOrDareGame() {
     // Check if we have enough players and a dealer
     if (gameState.players.length < 2 || !gameState.dealerId) return;
     
+    // Get a random non-dealer player to start
+    const nonDealerPlayers = gameState.players.filter(p => !p.isDealer);
+    if (nonDealerPlayers.length === 0) return;
+    
+    const randomIndex = Math.floor(Math.random() * nonDealerPlayers.length);
+    const startingPlayerId = nonDealerPlayers[randomIndex].id;
+    
     setGameState(prev => ({
       ...prev,
       gameStarted: true,
-      // Select a random non-dealer player to start
-      currentPlayerId: getRandomPlayerExcept(gameState.dealerId)
+      currentPlayerId: startingPlayerId
     }));
   };
   
-  // Get a random player ID except for the specified one
-  const getRandomPlayerExcept = (exceptId: string): string => {
-    const eligiblePlayers = gameState.players.filter(p => p.id !== exceptId);
-    if (eligiblePlayers.length === 0) return gameState.players[0].id;
-    
-    const randomIndex = Math.floor(Math.random() * eligiblePlayers.length);
-    return eligiblePlayers[randomIndex].id;
-  };
-  
   // Select a challenge type (Truth or Dare)
-  const selectChallengeType = (type: 'Truth' | 'Dare') => {
+  const selectChallengeType = (type: ChallengeType) => {
     setGameState(prev => ({
       ...prev,
       selectedChallengeType: type,
@@ -215,6 +273,17 @@ export default function TruthOrDareGame() {
     setGameState(prev => ({
       ...prev,
       currentPlayerId: nextPlayerId,
+    }));
+  };
+  
+  // Reset the game
+  const resetGame = () => {
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: false,
+      roundInProgress: false,
+      currentPlayerId: null,
+      selectedChallengeType: null
     }));
   };
   
