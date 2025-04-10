@@ -183,3 +183,76 @@ body {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+/* Truth or Dare specific styling */
+.truth-dare-page {
+  background: linear-gradient(135deg, #7e22ce, #9333ea, #6b21a8);
+  background-size: 200% 200%;
+  animation: gradientBackground 15s ease infinite;
+}
+
+/* Player selection animation for Truth or Dare */
+@keyframes highlightPlayer {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+}
+
+.highlight-player {
+  animation: highlightPlayer 2s ease infinite;
+}
+
+/* Points milestone animation */
+@keyframes pointsMilestone {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.points-milestone {
+  background: linear-gradient(270deg, #ec4899, #9333ea, #ec4899);
+  background-size: 200% 200%;
+  animation: pointsMilestone 2s ease infinite;
+  color: white;
+  font-weight: bold;
+}
+
+/* Challenge button hover effect */
+.challenge-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.challenge-btn:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+}
+
+.challenge-btn:hover:after {
+  transform: translateX(100%);
+  transition: transform 0.6s ease;
+}
+
+/* Distribution target highlight */
+.distribution-target {
+  position: relative;
+}
+
+.distribution-target:before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 10px;
+  border: 2px dashed rgba(236, 72, 153, 0.6);
+  animation: pulse 1.5s infinite ease-in-out;
+  pointer-events: none;
+}
